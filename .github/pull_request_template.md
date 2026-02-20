@@ -1,5 +1,4 @@
 ﻿## 📌 Summary
-<!-- وصف مختصر — شو عملت اليوم -->
 
 ## 🎯 Jira Story
 `D{XX}: {Title}`
