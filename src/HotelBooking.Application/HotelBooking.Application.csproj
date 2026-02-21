@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Auth\Commands\Login\" />
     <Folder Include="Features\Auth\Commands\UpdateProfile\" />
     <Folder Include="Features\Auth\Queries\GetProfile\" />
   </ItemGroup>
