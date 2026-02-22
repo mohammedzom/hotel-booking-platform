@@ -1,10 +1,14 @@
-﻿using HotelBooking.Domain.Common.Results;
+﻿using Asp.Versioning;
+using HotelBooking.Domain.Common.Results;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace HotelBooking.Api.Controllers;
 
 [ApiController]
+[ApiVersion("1.0")]
+[Route("api/v{version:apiVersion}/[controller]")]
+
 public abstract class ApiController : ControllerBase
 {
     protected ActionResult Problem(List<Error> errors)
