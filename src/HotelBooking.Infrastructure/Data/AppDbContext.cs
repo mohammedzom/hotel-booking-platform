@@ -1,5 +1,8 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
 using HotelBooking.Domain.Common;
+using HotelBooking.Domain.Hotels;
+using HotelBooking.Domain.Rooms;
+using HotelBooking.Domain.Services;
 using HotelBooking.Infrastructure.Identity;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -12,6 +15,17 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>(options), IAppDbContext
 {
 
+    public DbSet<City> Cities => Set<City>();
+    public DbSet<Hotel> Hotels => Set<Hotel>();
+    public DbSet<HotelRoomType> HotelRoomTypes => Set<HotelRoomType>();
+    public DbSet<HotelService> HotelServices => Set<HotelService>();
+    public DbSet<HotelRoomTypeService> HotelRoomTypeServices => Set<HotelRoomTypeService>();
+    public DbSet<FeaturedDeal> FeaturedDeals => Set<FeaturedDeal>();
+    public DbSet<HotelVisit> HotelVisits => Set<HotelVisit>();
+    public DbSet<RoomType> RoomTypes => Set<RoomType>();
+    public DbSet<Room> Rooms => Set<Room>();
+    public DbSet<Service> Services => Set<Service>();
+    public DbSet<Image> Images => Set<Image>();
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         await DispatchDomainEventsAsync(ct);
