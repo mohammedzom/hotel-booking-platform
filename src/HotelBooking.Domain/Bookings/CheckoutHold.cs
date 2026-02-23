@@ -30,6 +30,7 @@ namespace HotelBooking.Domain.Bookings
             CheckOut = checkOut;
             Quantity = quantity;
             ExpiresAtUtc = expiresAtUtc;
+            CreatedAtUtc = DateTimeOffset.UtcNow;
         }
 
         public Guid UserId { get; private set; }
