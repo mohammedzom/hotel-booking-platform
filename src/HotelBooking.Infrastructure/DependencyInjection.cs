@@ -19,15 +19,11 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services, IConfiguration configuration)
     {
-
         services.AddSingleton(TimeProvider.System);
-
 
         services.Configure<JwtSettings>(configuration.GetSection("JWT"));
 
-
         services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
-
 
         services.AddDbContext<AppDbContext>((sp, options) =>
         {
@@ -43,7 +39,6 @@ public static class DependencyInjection
 
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
-
         services.AddIdentityCore<ApplicationUser>(options =>
         {
             options.Password.RequireDigit = true;
@@ -57,8 +52,8 @@ public static class DependencyInjection
         .AddEntityFrameworkStores<AppDbContext>()
         .AddDefaultTokenProviders();
 
-
         var jwtSection = configuration.GetSection("JWT");
+
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
@@ -68,15 +63,17 @@ public static class DependencyInjection
                     ValidateAudience = true,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+
                     ValidIssuer = jwtSection["Issuer"],
                     ValidAudience = jwtSection["Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtSection["Secret"]!))
+                        Encoding.UTF8.GetBytes(jwtSection["Secret"]!)),
+
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
         services.AddAuthorization();
-
 
         services.AddScoped<ITokenProvider, TokenProvider>();
         services.AddScoped<IIdentityService, IdentityService>();
