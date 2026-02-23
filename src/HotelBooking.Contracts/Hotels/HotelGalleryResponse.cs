@@ -3,8 +3,9 @@
 public sealed record ImageDto(
     Guid Id,
     string Url,
-    string? AltText,
-    string ImageType);
+    string? Caption,
+    int SortOrder,
+    string EntityType);
 
 public sealed record HotelGalleryResponse(
     Guid HotelId,
