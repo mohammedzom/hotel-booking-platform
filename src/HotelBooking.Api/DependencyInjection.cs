@@ -1,7 +1,8 @@
-﻿using HotelBooking.Api.Infrastructure;
+﻿using System.Threading.RateLimiting;
+using HotelBooking.Api.Infrastructure;
 using HotelBooking.Api.Services;
 using HotelBooking.Application.Common.Interfaces;
-using HotelBooking.Domain.Services;
+using Microsoft.AspNetCore.RateLimiting;
 using Serilog;
 
 namespace HotelBooking.Api;
@@ -11,13 +12,18 @@ public static class DependencyInjection
     public static IServiceCollection AddPresentation(this IServiceCollection services)
     {
         services.AddControllers();
+
         services.AddEndpointsApiExplorer();
         services.AddSwagger();
+
         services.AddHttpContextAccessor();
         services.AddScoped<IUser, CurrentUser>();
+
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
+
         services.AddMemoryCache();
+
         services.AddApiVersioning(options =>
         {
             options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
@@ -29,6 +35,40 @@ public static class DependencyInjection
         {
             options.GroupNameFormat = "'v'VVV";
             options.SubstituteApiVersionInUrl = true;
+        });
+
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                return RateLimitPartition.GetTokenBucketLimiter(ip, _ => new TokenBucketRateLimiterOptions
+                {
+                    TokenLimit = 300,
+                    TokensPerPeriod = 300,
+                    ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+                    AutoReplenishment = true,
+                    QueueLimit = 0,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                });
+            });
+
+            options.AddPolicy("auth", httpContext =>
+            {
+                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    AutoReplenishment = true,
+                    QueueLimit = 0,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                });
+            });
         });
 
         return services;
@@ -70,15 +110,20 @@ public static class DependencyInjection
                 }
             });
 
-                    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                    if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath);
-                });
+            var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            if (File.Exists(xmlPath))
+                c.IncludeXmlComments(xmlPath);
+        });
+
         return services;
     }
+
     public static WebApplication UseCoreMiddlewares(this WebApplication app)
     {
         app.UseMiddleware<CorrelationIdMiddleware>();
+        app.UseMiddleware<SecurityHeadersMiddleware>();
+
         app.UseSerilogRequestLogging();
         app.UseExceptionHandler();
 
@@ -87,8 +132,15 @@ public static class DependencyInjection
             app.UseSwagger();
             app.UseSwaggerUI();
         }
+        else
+        {
+            app.UseHsts();
+        }
 
         app.UseHttpsRedirection();
+
+        app.UseRateLimiter();
+
         app.UseAuthentication();
         app.UseAuthorization();
 

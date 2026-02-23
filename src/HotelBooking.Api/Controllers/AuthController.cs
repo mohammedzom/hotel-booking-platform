@@ -7,6 +7,7 @@ using HotelBooking.Contracts.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 
 namespace HotelBooking.Api.Controllers;
@@ -14,6 +15,8 @@ namespace HotelBooking.Api.Controllers;
 public sealed class AuthController(ISender sender) : ApiController
 {
     /// <summary>Register a new user account.</summary>
+    [EnableRateLimiting("auth")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpPost("register")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -31,6 +34,8 @@ public sealed class AuthController(ISender sender) : ApiController
     }
 
     /// <summary>Login and receive a JWT token.</summary>
+    [EnableRateLimiting("auth")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [HttpPost("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
