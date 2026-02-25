@@ -1,4 +1,5 @@
-﻿using HotelBooking.Domain.Hotels;
+﻿using HotelBooking.Domain.Bookings;
+using HotelBooking.Domain.Hotels;
 using HotelBooking.Domain.Rooms;
 using HotelBooking.Domain.Services;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,9 @@ public interface IAppDbContext
     DbSet<Room> Rooms { get; }
     DbSet<Service> Services { get; }
     DbSet<Image> Images { get; }
+    public DbSet<Booking> Bookings { get; }
+    public DbSet<CheckoutHold> CheckoutHolds { get; }
+    public DbSet<BookingRoom> BookingRooms { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -2,13 +2,13 @@
 using HotelBooking.Domain.Common.Results;
 using HotelBooking.Domain.Hotels.Enums;
 using HotelBooking.Domain.Hotels;
-using HotelBooking.Infrastructure.Data;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using HotelBooking.Application.Common.Interfaces;
 
 namespace HotelBooking.Application.Features.Hotels.Queries.GetHotelGallery;
 
-public sealed class GetHotelGalleryQueryHandler(AppDbContext context)
+public sealed class GetHotelGalleryQueryHandler(IAppDbContext context)
     : IRequestHandler<GetHotelGalleryQuery, Result<HotelGalleryResponse>>
 {
     public async Task<Result<HotelGalleryResponse>> Handle(
