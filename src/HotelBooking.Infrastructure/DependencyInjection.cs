@@ -39,6 +39,8 @@ public static class DependencyInjection
 
         services.AddHybridCache();
 
+        services.AddRefreshToken(configuration);
+
         return services;
     }
 
@@ -148,6 +150,20 @@ public static class DependencyInjection
                     ClockSkew = TimeSpan.Zero
                 };
             });
+
+        return services;
+    }
+
+    private static IServiceCollection AddRefreshToken(this IServiceCollection services,IConfiguration configuration)
+    {
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+
+        services.AddOptions<RefreshTokenSettings>()
+            .Bind(configuration.GetSection("RefreshToken"))
+            .Validate(x => x.ExpiryDays is > 0 and <= 90, "RefreshToken.ExpiryDays must be between 1 and 90")
+            .Validate(x => x.TokenBytes is >= 32 and <= 128, "RefreshToken.TokenBytes must be between 32 and 128")
+            .ValidateOnStart();
 
         return services;
     }
