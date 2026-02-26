@@ -4,12 +4,12 @@ using MediatR;
 
 namespace HotelBooking.Application.Features.Auth.Commands.RevokeToken;
 
-public sealed class RevokeTokenCommandHandler(
+public sealed class LogoutCurrentSessionCommandHandler(
     ITokenProvider tokenProvider,
     IRefreshTokenRepository refreshTokenRepo)
-    : IRequestHandler<RevokeTokenCommand, Result<Success>>
+    : IRequestHandler<LogoutCurrentSessionCommand, Result<Success>>
 {
-    public async Task<Result<Success>> Handle(RevokeTokenCommand cmd, CancellationToken ct)
+    public async Task<Result<Success>> Handle(LogoutCurrentSessionCommand cmd, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(cmd.RefreshToken))
             return Result.Success;

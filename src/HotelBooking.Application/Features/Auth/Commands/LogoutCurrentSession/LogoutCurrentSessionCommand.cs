@@ -3,5 +3,5 @@ using MediatR;
 
 namespace HotelBooking.Application.Features.Auth.Commands.RevokeToken;
 
-public sealed record RevokeTokenCommand(Guid UserId, string RefreshToken)
+public sealed record LogoutCurrentSessionCommand(Guid UserId, string RefreshToken)
     : IRequest<Result<Success>>;
