@@ -19,8 +19,8 @@ public sealed class LoginCommandHandler(
 
         var user = result.Value;
 
-        var tokenResult = await tokenProvider.GenerateJwtTokenAsync(
-            new AppUserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Roles), ct);
+        var tokenResult = await tokenProvider.GenerateTokenPairAsync(
+            new AppUserDto(user.Id, user.Email, user.FirstName, user.LastName, user.Roles), ct:ct);
 
         if (tokenResult.IsError)        
             return tokenResult.TopError;

@@ -30,7 +30,7 @@ public class RegisterCommandHandler(
             user.FirstName, user.LastName,
             user.Roles);
 
-        var tokenResult = await tokenProvider.GenerateJwtTokenAsync(appUser, ct);
+        var tokenResult = await tokenProvider.GenerateTokenPairAsync(appUser, ct:ct);
         if (tokenResult.IsError)
             return tokenResult.TopError;
 
