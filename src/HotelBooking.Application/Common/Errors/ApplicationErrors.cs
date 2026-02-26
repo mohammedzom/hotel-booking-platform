@@ -27,9 +27,9 @@ public static class ApplicationErrors
             Error.Failure("Auth.AccountLocked", "Account is temporarily locked. Please try again later");
 
         public static readonly Error InvalidRefreshToken =
-            Error.Failure("Auth.InvalidRefreshToken", "Invalid Refresh Token");
+            Error.Validation("Auth.InvalidRefreshToken", "Refresh token is invalid.");
 
         public static readonly Error RefreshTokenReuse =
-            Error.Failure("Auth.RefreshTokenReuse", "Refresh Token Reuse");
+            Error.Failure("Auth.RefreshTokenReuse", "Refresh token reuse detected. Please login again.");
     }
 }
