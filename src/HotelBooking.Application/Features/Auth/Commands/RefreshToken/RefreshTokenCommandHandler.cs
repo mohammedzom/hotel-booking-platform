@@ -70,16 +70,21 @@ public sealed class RefreshTokenCommandHandler(
             IsRevoked: false,
             ExpiresAt: DateTimeOffset.UtcNow.AddDays(_rtSettings.ExpiryDays));
 
-        await refreshTokenRepository.AddAsync(newRTData, ct);
+        var rotated = await refreshTokenRepository.RotateAsync(
+            oldTokenId: stored.Id,
+            oldTokenFamily: stored.Family,
+            newToken: newRTData,
+            nowUtc: DateTimeOffset.UtcNow,
+            ct: ct);
 
-        bool isMarked = await refreshTokenRepository.TryMarkAsUsedAsync(stored.Id, newRTHash, DateTimeOffset.UtcNow);
-
-        if(!isMarked)
+        if (!rotated)
         {
+            // Race condition: someone else used this token between our check and rotation
             await refreshTokenRepository.RevokeAllFamilyAsync(stored.Family, ct);
             cookieService.RemoveRefreshTokenCookie();
             return ApplicationErrors.Auth.RefreshTokenReuse;
         }
+
 
         cookieService.SetRefreshTokenCookie(newRawRT);
 

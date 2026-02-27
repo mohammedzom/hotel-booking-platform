@@ -14,9 +14,22 @@ public interface IRefreshTokenRepository
         DateTimeOffset nowUtc,
         CancellationToken ct = default);
 
+    /// <summary>
+    /// Atomically marks the old token as used and adds the new token.
+    /// Returns false if the old token was already used (reuse attack detected).
+    /// This method handles its own database transaction internally.
+    /// </summary>
+    Task<bool> RotateAsync(
+        Guid oldTokenId,
+        string oldTokenFamily,
+        RefreshTokenData newToken,
+        DateTimeOffset nowUtc,
+        CancellationToken ct = default);
+
     Task RemoveExpiredAsync(CancellationToken ct = default);
 
     Task RevokeAllForUserAsync(Guid userId, CancellationToken ct = default);
+
     Task SaveChangesAsync(CancellationToken ct = default);
 }
 

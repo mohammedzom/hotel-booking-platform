@@ -1,12 +1,14 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
 using HotelBooking.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace HotelBooking.Infrastructure.Identity;
 
 public sealed class RefreshTokenRepository(AppDbContext context) : IRefreshTokenRepository
 {
-    public async Task<RefreshTokenData?> GetByHashAsync(string tokenHash, CancellationToken ct = default)
+    public async Task<RefreshTokenData?> GetByHashAsync(
+        string tokenHash, CancellationToken ct = default)
     {
         var token = await context.RefreshTokens
             .AsNoTracking()
@@ -29,7 +31,64 @@ public sealed class RefreshTokenRepository(AppDbContext context) : IRefreshToken
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task RevokeAllFamilyAsync(string family, CancellationToken ct = default)
+    /// <summary>
+    /// Atomically:
+    /// 1. Marks the old token as used (only if it's still active)
+    /// 2. Inserts the new token
+    /// Returns false if old token was already used → reuse attack detected.
+    /// </summary>
+    public async Task<bool> RotateAsync(
+        Guid oldTokenId,
+        string oldTokenFamily,
+        RefreshTokenData newToken,
+        DateTimeOffset nowUtc,
+        CancellationToken ct = default)
+    {
+        await using IDbContextTransaction tx =
+            await context.Database.BeginTransactionAsync(ct);
+
+        try
+        {
+            var affected = await context.RefreshTokens
+                .Where(t =>
+                    t.Id == oldTokenId &&
+                    !t.IsUsed &&
+                    !t.IsRevoked &&
+                    t.ExpiresAt > nowUtc)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.IsUsed, true)
+                    .SetProperty(t => t.ReplacedByTokenHash, newToken.TokenHash),
+                    ct);
+
+            if (affected == 0)
+            {
+                await tx.RollbackAsync(ct);
+                return false;
+            }
+
+            var newEntity = new RefreshToken(
+                id: newToken.Id,
+                userId: newToken.UserId,
+                tokenHash: newToken.TokenHash,
+                family: newToken.Family,      // Same family = same session
+                expiresAt: newToken.ExpiresAt,
+                deviceInfo: newToken.DeviceInfo);
+
+            context.RefreshTokens.Add(newEntity);
+            await context.SaveChangesAsync(ct);
+
+            await tx.CommitAsync(ct);
+            return true;
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
+
+    public async Task RevokeAllFamilyAsync(
+        string family, CancellationToken ct = default)
     {
         await context.RefreshTokens
             .Where(t => t.Family == family && !t.IsRevoked)
@@ -59,13 +118,14 @@ public sealed class RefreshTokenRepository(AppDbContext context) : IRefreshToken
 
     public async Task RemoveExpiredAsync(CancellationToken ct = default)
     {
-        //audit for last 30 days
-        var cutoff = DateTimeOffset.UtcNow.AddDays(-30); 
+        var cutoff = DateTimeOffset.UtcNow.AddDays(-30);
         await context.RefreshTokens
             .Where(t => t.ExpiresAt < cutoff)
             .ExecuteDeleteAsync(ct);
     }
-    public async Task RevokeAllForUserAsync(Guid userId, CancellationToken ct = default)
+
+    public async Task RevokeAllForUserAsync(
+        Guid userId, CancellationToken ct = default)
     {
         await context.RefreshTokens
             .Where(t => t.UserId == userId && !t.IsRevoked)

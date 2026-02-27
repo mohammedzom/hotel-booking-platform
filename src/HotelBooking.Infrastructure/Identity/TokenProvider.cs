@@ -20,7 +20,7 @@ public sealed class TokenProvider(
 
     public Result<TokenResponse> GenerateJwtToken(AppUserDto user)
     {
-        var expiresAt = DateTimeOffset.UtcNow.AddHours(_jwt.ExpiryHours);
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiryMinutes);
 
         var claims = new List<Claim>
         {

@@ -47,13 +47,39 @@ static void AddHealthChecks(WebApplicationBuilder builder)
 
 static async Task ApplyMigrationsAndSeedAsync(WebApplication app)
 {
-    using var scope = app.Services.CreateScope();
+    if (app.Environment.IsDevelopment())
+    {
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await context.Database.MigrateAsync();
-    await DataSeeder.SeedAsync(app.Services);
+        if ((await context.Database.GetPendingMigrationsAsync()).Any())
+        {
+            app.Logger.LogWarning(
+                "Applying {Count} pending migrations...",
+                (await context.Database.GetPendingMigrationsAsync()).Count());
+
+            await context.Database.MigrateAsync();
+        }
+
+        await DataSeeder.SeedAsync(app.Services);
+    }
+    else
+    {
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        try
+        {
+            await context.Database.CanConnectAsync();
+            app.Logger.LogInformation("Database connection verified.");
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogCritical(ex, "Cannot connect to database on startup.");
+            throw;
+        }
+    }
 }
-
 static void MapHealthEndpoints(WebApplication app)
 {
     app.MapHealthChecks("/api/v1/health/live", new HealthCheckOptions

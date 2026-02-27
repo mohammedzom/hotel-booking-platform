@@ -84,17 +84,27 @@ public sealed class AuthController(ISender sender) : ApiController
 
     [HttpPost("refresh")]
     [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-    public async Task<IActionResult> Refresh(
-    [FromBody] RefreshTokenRequest request,
-    CancellationToken ct)
+    [ProducesResponseType(typeof(TokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Refresh(CancellationToken ct)
     {
-        var result = await sender.Send(
-            new RefreshTokenCommand(),
-            ct);
-
+        var result = await sender.Send(new RefreshTokenCommand(), ct);
         return result.Match(Ok, Problem);
     }
 
+
+    [Authorize]
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> Logout(CancellationToken ct)
+    {
+        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        if (!Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        await sender.Send(new LogoutCurrentSessionCommand(userId), ct);
+        return NoContent();
+    }
 
 
 
@@ -110,6 +120,5 @@ public sealed class AuthController(ISender sender) : ApiController
         await sender.Send(new LogoutAllSessionsCommand(userId), ct);
         return NoContent();
     }
-
 
 }
