@@ -17,10 +17,7 @@
     <PackageReference Include="MediatR" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Features\" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" />
   </ItemGroup>
 
 </Project>
