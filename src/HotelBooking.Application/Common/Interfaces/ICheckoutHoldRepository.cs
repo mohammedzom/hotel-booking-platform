@@ -39,6 +39,7 @@ public sealed record HoldRequest(
 public sealed record HoldAcquisitionResult(
     bool IsSuccess,
     List<Guid> HoldIds,
+    DateTimeOffset? ExpiresAtUtc = null,
     string? FailedRoomTypeName = null);
 
 public sealed record ActiveHoldDto(

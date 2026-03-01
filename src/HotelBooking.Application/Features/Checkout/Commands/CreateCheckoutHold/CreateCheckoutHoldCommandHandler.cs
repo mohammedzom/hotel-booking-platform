@@ -32,15 +32,23 @@ public sealed class CreateCheckoutHoldCommandHandler(
         await holdRepository.ReleaseHoldsAsync(cmd.UserId, ct);
 
         var holdRequests = cartItems
-            .Select(item => new HoldRequest(
-                HotelId: item.HotelId,
-                HotelRoomTypeId: item.HotelRoomTypeId,
-                CheckIn: item.CheckIn,
-                CheckOut: item.CheckOut,
-                Quantity: item.Quantity))
-            .ToList();
+                            .GroupBy(item => new
+                            {
+                                item.HotelId,
+                                item.HotelRoomTypeId,
+                                item.CheckIn,
+                                item.CheckOut
+                            })
+                            .Select(g => new HoldRequest(
+                                HotelId: g.Key.HotelId,
+                                HotelRoomTypeId: g.Key.HotelRoomTypeId,
+                                CheckIn: g.Key.CheckIn,
+                                CheckOut: g.Key.CheckOut,
+                                Quantity: g.Sum(x => x.Quantity)))
+                            .ToList();
 
         var holdDuration = TimeSpan.FromMinutes(_settings.CheckoutHoldMinutes);
+
         var result = await holdRepository.TryAcquireHoldsAsync(
             cmd.UserId, holdRequests, holdDuration, ct);
 

@@ -32,8 +32,8 @@ namespace HotelBooking.Infrastructure.Data.Configurations
 
             builder.HasOne(fd => fd.HotelRoomType)
                 .WithMany()
-                .HasForeignKey(fd => new {fd.HotelId , fd.HotelRoomTypeId})
-                .HasPrincipalKey(hrt => new { hrt.HotelId,hrt.Id})
+                .HasForeignKey(fd => new { fd.HotelRoomTypeId, fd.HotelId })
+                .HasPrincipalKey(hrt => new { hrt.Id, hrt.HotelId })
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasIndex(fd => fd.DisplayOrder);

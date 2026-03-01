@@ -1,5 +1,6 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
 using HotelBooking.Domain.Bookings;
+using HotelBooking.Domain.Bookings.Enums;
 using HotelBooking.Infrastructure.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -25,54 +26,62 @@ public sealed class CheckoutHoldRepository(AppDbContext context)
         try
         {
             var createdHoldIds = new List<Guid>();
-            var expiresAt = DateTimeOffset.UtcNow.Add(holdDuration);
+            var pendingHolds = new List<(Guid HotelRoomTypeId, DateOnly CheckIn, DateOnly CheckOut, int Quantity)>();
+
+            var now = DateTimeOffset.UtcNow;
+            var expiresAt = now.Add(holdDuration);
+
 
             foreach (var req in requests)
             {
-                // Count total rooms of this type
                 var totalRooms = await context.Rooms
                     .Where(r =>
                         r.HotelRoomTypeId == req.HotelRoomTypeId &&
                         r.DeletedAtUtc == null)
                     .CountAsync(ct);
 
-                // Count active holds for this room type and date range
                 var heldCount = await context.CheckoutHolds
                     .Where(h =>
                         h.HotelRoomTypeId == req.HotelRoomTypeId &&
                         !h.IsReleased &&
-                        h.ExpiresAtUtc > DateTimeOffset.UtcNow &&
+                        h.ExpiresAtUtc > now &&
                         h.CheckIn < req.CheckOut &&
                         h.CheckOut > req.CheckIn)
                     .SumAsync(h => (int?)h.Quantity ?? 0, ct);
 
-                // Count confirmed bookings for overlapping dates
                 var bookedCount = await context.BookingRooms
-                    .Include(br => br.Booking)
                     .Where(br =>
                         br.HotelRoomTypeId == req.HotelRoomTypeId &&
-                        br.Booking.Status != Domain.Bookings.Enums.BookingStatus.Cancelled &&
-                        br.Booking.Status != Domain.Bookings.Enums.BookingStatus.Failed &&
+                        br.Booking.Status != BookingStatus.Cancelled &&
+                        br.Booking.Status != BookingStatus.Failed &&
                         br.Booking.CheckIn < req.CheckOut &&
                         br.Booking.CheckOut > req.CheckIn)
                     .CountAsync(ct);
 
-                var available = totalRooms - heldCount - bookedCount;
+                // NEW: count holds created earlier in this same loop
+                var pendingHeldCount = pendingHolds
+                    .Where(h =>
+                        h.HotelRoomTypeId == req.HotelRoomTypeId &&
+                        h.CheckIn < req.CheckOut &&
+                        h.CheckOut > req.CheckIn)
+                    .Sum(h => h.Quantity);
+
+                var available = totalRooms - heldCount - bookedCount - pendingHeldCount;
 
                 if (available < req.Quantity)
                 {
                     await tx.RollbackAsync(ct);
 
-                    // Get room type name for user-friendly error
                     var name = await context.HotelRoomTypes
                         .Where(rt => rt.Id == req.HotelRoomTypeId)
                         .Select(rt => rt.RoomType.Name)
                         .FirstOrDefaultAsync(ct);
 
                     return new HoldAcquisitionResult(
-                        IsSuccess: false,
-                        HoldIds: [],
-                        FailedRoomTypeName: name ?? "Unknown");
+                                IsSuccess: false,
+                                HoldIds: [],
+                                ExpiresAtUtc: null,
+                                FailedRoomTypeName: name ?? "Unknown");
                 }
 
                 var hold = new CheckoutHold(
@@ -87,14 +96,18 @@ public sealed class CheckoutHoldRepository(AppDbContext context)
 
                 context.CheckoutHolds.Add(hold);
                 createdHoldIds.Add(hold.Id);
+
+                // IMPORTANT: reserve immediately in-memory for next iterations
+                pendingHolds.Add((req.HotelRoomTypeId, req.CheckIn, req.CheckOut, req.Quantity));
             }
 
             await context.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
 
             return new HoldAcquisitionResult(
-                IsSuccess: true,
-                HoldIds: createdHoldIds);
+                        IsSuccess: true,
+                        HoldIds: createdHoldIds,
+                        ExpiresAtUtc: expiresAt);
         }
         catch
         {

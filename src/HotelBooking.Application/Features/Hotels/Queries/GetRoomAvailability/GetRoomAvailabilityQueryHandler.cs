@@ -31,8 +31,7 @@ public sealed class GetRoomAvailabilityQueryHandler(IAppDbContext context)
 
         var bookedCounts = await context.Bookings
             .Where(b => b.HotelId == q.HotelId
-                     && b.Status == BookingStatus.Confirmed
-                     && b.Status == BookingStatus.CheckedIn
+                     && (b.Status == BookingStatus.Confirmed || b.Status == BookingStatus.CheckedIn)
                      && b.CheckIn < q.CheckOut
                      && b.CheckOut > q.CheckIn)
             .SelectMany(b => b.BookingRooms)
