@@ -43,7 +43,7 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             .HasColumnType("datetimeoffset");
 
         builder.HasOne(x => x.Booking)
-            .WithMany()
+            .WithMany(b => b.Payments)
             .HasForeignKey(x => x.BookingId)
             .OnDelete(DeleteBehavior.Cascade);
 

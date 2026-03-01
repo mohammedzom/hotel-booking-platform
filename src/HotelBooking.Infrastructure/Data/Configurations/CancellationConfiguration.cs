@@ -34,7 +34,7 @@ public sealed class CancellationConfiguration : IEntityTypeConfiguration<Cancell
             .IsRequired();
 
         builder.HasOne(x => x.Booking)
-            .WithOne()
+            .WithOne(b => b.Cancellation)
             .HasForeignKey<Cancellation>(x => x.BookingId)
             .OnDelete(DeleteBehavior.Cascade);
 
