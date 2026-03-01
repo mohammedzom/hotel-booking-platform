@@ -16,6 +16,7 @@ public sealed class UpdateCartItemCommandHandler(IAppDbContext db)
         var item = await db.CartItems
             .Include(c => c.Hotel)
             .Include(c => c.HotelRoomType)
+                .ThenInclude(rt => rt.RoomType)
             .FirstOrDefaultAsync(
                 c => c.Id == cmd.CartItemId && c.UserId == cmd.UserId, ct);
 
