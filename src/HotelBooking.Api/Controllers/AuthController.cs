@@ -1,4 +1,4 @@
-﻿using System.Security.Claims;
+﻿using Asp.Versioning;
 using HotelBooking.Application.Features.Auth.Commands.Login;
 using HotelBooking.Application.Features.Auth.Commands.Register;
 using HotelBooking.Application.Features.Auth.Commands.UpdateProfile;
@@ -7,10 +7,10 @@ using HotelBooking.Contracts.Auth;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace HotelBooking.Api.Controllers;
 
-[Route("api/v1/auth")]
 public sealed class AuthController(ISender sender) : ApiController
 {
     /// <summary>Register a new user account.</summary>
