@@ -1,4 +1,5 @@
-﻿using HotelBooking.Application.Common.Interfaces;
+﻿// src/HotelBooking.Infrastructure/Identity/TokenProvider.cs
+using HotelBooking.Application.Common.Interfaces;
 using HotelBooking.Application.Common.Models;
 using HotelBooking.Contracts.Auth;
 using HotelBooking.Domain.Common.Results;
@@ -7,18 +8,19 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace HotelBooking.Infrastructure.Identity;
 
-public class TokenProvider(IOptions<JwtSettings> jwtSettings) : ITokenProvider
+public sealed class TokenProvider(
+    IOptions<JwtSettings> jwtSettings) : ITokenProvider
 {
     private readonly JwtSettings _jwt = jwtSettings.Value;
 
-    public Task<Result<TokenResponse>> GenerateJwtTokenAsync(
-        AppUserDto user, CancellationToken ct = default)
+    public Result<TokenResponse> GenerateJwtToken(AppUserDto user)
     {
-        var expiresAt = DateTimeOffset.UtcNow.AddHours(_jwt.ExpiryHours);
+        var expiresAt = DateTimeOffset.UtcNow.AddMinutes(_jwt.ExpiryMinutes);
 
         var claims = new List<Claim>
         {
@@ -42,11 +44,22 @@ public class TokenProvider(IOptions<JwtSettings> jwtSettings) : ITokenProvider
             expires: expiresAt.UtcDateTime,
             signingCredentials: credentials);
 
-        var response = new TokenResponse(
-                AccessToken: new JwtSecurityTokenHandler().WriteToken(token),
-                ExpiresOnUtc: expiresAt.UtcDateTime);
+        return new TokenResponse(
+            AccessToken: new JwtSecurityTokenHandler().WriteToken(token),
+            ExpiresOnUtc: expiresAt.UtcDateTime);
+    }
 
-        return Task.FromResult<Result<TokenResponse>>(response);
+    public string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[64];
+        RandomNumberGenerator.Fill(randomBytes);
+        return Convert.ToBase64String(randomBytes);
+    }
+
+    public string HashToken(string token)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(token));
+        return Convert.ToBase64String(bytes);
     }
 
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
@@ -55,7 +68,7 @@ public class TokenProvider(IOptions<JwtSettings> jwtSettings) : ITokenProvider
         {
             ValidateIssuer = true,
             ValidateAudience = true,
-            ValidateLifetime = false,   
+            ValidateLifetime = false, 
             ValidateIssuerSigningKey = true,
             ValidIssuer = _jwt.Issuer,
             ValidAudience = _jwt.Audience,

@@ -1,5 +1,7 @@
 ﻿using HotelBooking.Domain.Bookings;
+using HotelBooking.Domain.Cart;
 using HotelBooking.Domain.Hotels;
+using HotelBooking.Domain.Reviews;
 using HotelBooking.Domain.Rooms;
 using HotelBooking.Domain.Services;
 using Microsoft.EntityFrameworkCore;
@@ -17,10 +19,16 @@ public interface IAppDbContext
     DbSet<Room> Rooms { get; }
     DbSet<Service> Services { get; }
     DbSet<Image> Images { get; }
-    DbSet<Booking> Bookings { get; }
-    DbSet<CheckoutHold> CheckoutHolds { get; }
-    DbSet<BookingRoom> BookingRooms { get; }
+    public DbSet<Booking> Bookings { get; }
+    public DbSet<CheckoutHold> CheckoutHolds { get; }
+    public DbSet<BookingRoom> BookingRooms { get; }
+    DbSet<BookingService> BookingServices { get; }
+    DbSet<Payment> Payments { get; }
+    DbSet<Cancellation> Cancellations { get; }
 
+    DbSet<CartItem> CartItems { get; }
+
+    DbSet<Review> Reviews { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

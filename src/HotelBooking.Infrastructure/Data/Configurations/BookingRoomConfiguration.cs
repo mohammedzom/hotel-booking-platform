@@ -38,7 +38,7 @@ public sealed class BookingRoomConfiguration : IEntityTypeConfiguration<BookingR
         builder.HasOne(br => br.HotelRoomType)
             .WithMany()
             .HasForeignKey(br => new { br.HotelRoomTypeId, br.HotelId })
-            .HasPrincipalKey(hrt => new { hrt.Id, hrt.HotelId })
+            .HasPrincipalKey(hr => new { hr.Id, hr.HotelId })
             .OnDelete(DeleteBehavior.Restrict);
 
 
