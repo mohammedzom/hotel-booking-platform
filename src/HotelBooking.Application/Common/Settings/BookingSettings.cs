@@ -1,4 +1,4 @@
-﻿namespace HotelBooking.Infrastructure.Settings;
+﻿namespace HotelBooking.Application.Common.Settings;
 
 public class BookingSettings
 {
