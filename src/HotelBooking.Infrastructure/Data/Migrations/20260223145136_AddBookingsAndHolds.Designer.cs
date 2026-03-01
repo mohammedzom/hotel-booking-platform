@@ -4,6 +4,7 @@ using HotelBooking.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelBooking.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260223145136_AddBookingsAndHolds")]
+    partial class AddBookingsAndHolds
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -245,8 +248,6 @@ namespace HotelBooking.Infrastructure.Data.Migrations
                     b.HasIndex("HotelRoomTypeId", "HotelId");
 
                     b.HasIndex("HotelId", "ExpiresAtUtc", "IsReleased");
-
-                    b.HasIndex("HotelId", "IsReleased", "ExpiresAtUtc");
 
                     b.HasIndex("HotelId", "HotelRoomTypeId", "CheckIn", "CheckOut");
 

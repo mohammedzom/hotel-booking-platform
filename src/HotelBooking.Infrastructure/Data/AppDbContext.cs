@@ -1,4 +1,5 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
+using HotelBooking.Domain.Bookings;
 using HotelBooking.Domain.Common;
 using HotelBooking.Domain.Hotels;
 using HotelBooking.Domain.Rooms;
@@ -26,6 +27,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Service> Services => Set<Service>();
     public DbSet<Image> Images => Set<Image>();
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<CheckoutHold> CheckoutHolds => Set<CheckoutHold>();
+    public DbSet<BookingRoom> BookingRooms => Set<BookingRoom>();
     public override async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
         await DispatchDomainEventsAsync(ct);
@@ -34,11 +38,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(builder); // Identity tables
+        base.OnModelCreating(builder); 
 
         builder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-        // Seed roles
+        
         var adminRoleId = Guid.Parse("10000000-0000-0000-0000-000000000001");
         var userRoleId = Guid.Parse("10000000-0000-0000-0000-000000000002");
 
