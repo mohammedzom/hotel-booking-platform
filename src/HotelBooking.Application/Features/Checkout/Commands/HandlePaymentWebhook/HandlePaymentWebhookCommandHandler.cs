@@ -19,24 +19,39 @@ public sealed class HandlePaymentWebhookCommandHandler(
     {
         var evt = cmd.WebhookEvent;
 
-        if (string.IsNullOrEmpty(evt.ProviderSessionId))
+        if (string.IsNullOrWhiteSpace(evt.ProviderSessionId) &&
+    string.IsNullOrWhiteSpace(evt.TransactionRef))
         {
             logger.LogWarning(
-                "Webhook event {EventType} has no ProviderSessionId — skipping",
+                "Webhook event {EventType} has neither ProviderSessionId nor TransactionRef — skipping",
                 evt.EventType);
 
             return Result.Updated;
         }
 
-        var payment = await db.Payments
+        var paymentQuery = db.Payments
             .Include(p => p.Booking)
-            .FirstOrDefaultAsync(p => p.ProviderSessionId == evt.ProviderSessionId, ct);
+            .AsQueryable();
+
+        var payment = !string.IsNullOrWhiteSpace(evt.ProviderSessionId)
+            ? await paymentQuery.FirstOrDefaultAsync(
+                p => p.ProviderSessionId == evt.ProviderSessionId, ct)
+            : null;
+
+        if (payment is null && !string.IsNullOrWhiteSpace(evt.TransactionRef))
+        {
+            payment = await db.Payments
+                .Include(p => p.Booking)
+                .FirstOrDefaultAsync(p => p.TransactionRef == evt.TransactionRef, ct);
+        }
 
         if (payment is null)
         {
             logger.LogWarning(
-                "No payment found for ProviderSessionId {SessionId} (event: {EventType})",
-                evt.ProviderSessionId, evt.EventType);
+                "No payment found for webhook event {EventType}. SessionId={SessionId}, TxRef={TxRef}",
+                evt.EventType,
+                evt.ProviderSessionId,
+                evt.TransactionRef);
 
             return Result.Updated;
         }
@@ -53,44 +68,55 @@ public sealed class HandlePaymentWebhookCommandHandler(
         string? logMessage = null;
         LogLevel? logLevel = null;
 
-        switch (evt.EventType)
-        {
-            case PaymentEventTypes.PaymentSucceeded:
-                payment.MarkAsSucceeded(
-                    transactionRef: evt.TransactionRef ?? evt.ProviderSessionId,
-                    responseJson: evt.RawPayload);
-
-                payment.Booking.Confirm();
-
-                logLevel = LogLevel.Information;
-                logMessage =
-                    "Payment {PaymentId} succeeded for booking {BookingNumber}. TxRef={TxRef}";
-                break;
-
-            case PaymentEventTypes.PaymentFailed:
-                payment.MarkAsFailed(responseJson: evt.RawPayload);
-                payment.Booking.MarkAsFailed();
-
-                logLevel = LogLevel.Warning;
-                logMessage =
-                    "Payment {PaymentId} failed for booking {BookingNumber}";
-                break;
-
-            default:
-                logger.LogDebug("Unhandled webhook event type: {EventType}", evt.EventType);
-                return Result.Updated; // Ack unknown events — don't retry
-        }
-
         try
         {
+            switch (evt.EventType)
+            {
+                case PaymentEventTypes.PaymentSucceeded:
+                    payment.MarkAsSucceeded(
+                        transactionRef: evt.TransactionRef ?? evt.ProviderSessionId!,
+                        responseJson: evt.RawPayload);
+
+                    payment.Booking.Confirm();
+
+                    logLevel = LogLevel.Information;
+                    logMessage =
+                        "Payment {PaymentId} succeeded for booking {BookingNumber}. TxRef={TxRef}";
+                    break;
+
+                case PaymentEventTypes.PaymentFailed:
+                    payment.MarkAsFailed(responseJson: evt.RawPayload);
+                    payment.Booking.MarkAsFailed();
+
+                    logLevel = LogLevel.Warning;
+                    logMessage =
+                        "Payment {PaymentId} failed for booking {BookingNumber}";
+                    break;
+
+                default:
+                    logger.LogDebug("Unhandled webhook event type: {EventType}", evt.EventType);
+                    return Result.Updated; // Ack unknown events — don't retry
+            }
+
             await db.SaveChangesAsync(ct);
+        }
+        catch (InvalidOperationException ex)
+        {
+            logger.LogInformation(
+                ex,
+                "Webhook event {EventType} caused an invalid state transition for payment {PaymentId} — treated as duplicate/out-of-order",
+                evt.EventType,
+                payment.Id);
+
+            return Result.Updated;
         }
         catch (DbUpdateConcurrencyException ex)
         {
             logger.LogInformation(
                 ex,
                 "Concurrent webhook update detected for payment {PaymentId} (session {SessionId}) — treated as idempotent duplicate",
-                payment.Id, evt.ProviderSessionId);
+                payment.Id,
+                evt.ProviderSessionId);
 
             return Result.Updated; // Ack duplicate
         }
