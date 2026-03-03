@@ -44,7 +44,31 @@ public sealed class WebhooksController(
 
         logger.LogInformation("Stripe webhook received: {EventType}", parsed.EventType);
 
-        await sender.Send(new HandlePaymentWebhookCommand(parsed), ct);
+        try
+        {
+            var result = await sender.Send(new HandlePaymentWebhookCommand(parsed), ct);
+
+            if (result.IsError)
+            {
+                logger.LogWarning(
+                    "Webhook handler returned error for event {EventType}: {ErrorCode} - {ErrorDescription}",
+                    parsed.EventType,
+                    result.TopError.Code,
+                    result.TopError.Description);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            logger.LogWarning(
+                "Webhook request was canceled while processing event {EventType}. Acknowledging to avoid retries.",
+                parsed.EventType);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex,
+                "Unhandled exception while processing webhook event {EventType}",
+                parsed.EventType);
+        }
 
         return Ok();
     }
