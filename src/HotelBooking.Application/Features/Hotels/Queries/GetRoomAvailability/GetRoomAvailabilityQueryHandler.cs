@@ -68,9 +68,9 @@ public sealed class GetRoomAvailabilityQueryHandler(IAppDbContext context)
 
         var availability = roomTypes.Select(hrt =>
         {
-            var totalRooms = hrt.Rooms.Count(r => r.Status == RoomStatus.Available);
-            var booked = bookedCounts.FirstOrDefault(b => b.HotelRoomTypeId == hrt.Id)?.Count ?? 0;
-            var held = heldCounts.FirstOrDefault(h => h.HotelRoomTypeId == hrt.Id)?.Count ?? 0;
+            var totalRooms = hrt.TotalRooms;
+            var booked = bookedByType.GetValueOrDefault(hrt.Id, 0);
+            var held = heldByType.GetValueOrDefault(hrt.Id, 0);
             var available = Math.Max(0, totalRooms - booked - held);
 
             return new RoomAvailabilityDto(
