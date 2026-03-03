@@ -25,7 +25,7 @@ namespace HotelBooking.Domain.Rooms
         public Guid HotelId { get; private set; }
         public string RoomNumber { get; private set; } = null!;
         public short? Floor { get; private set; }
-        public string Status { get; private set; } = "available";
+        public RoomStatus Status { get; private set; } = RoomStatus.Available;
         public DateTimeOffset? DeletedAtUtc { get; set; }
 
         public HotelRoomType HotelRoomType { get; private set; } = null!;
