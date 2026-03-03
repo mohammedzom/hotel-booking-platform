@@ -110,8 +110,8 @@ public sealed class CreateBookingCommandHandler(
                 return PhaseAResult.Fail(ApplicationErrors.Checkout.HoldExpired);
 
             var holdsValidationError = ValidateHoldsConsistency(holds);
-            if (holdsValidationError is not null)
-                return PhaseAResult.Fail(holdsValidationError.Value);
+            if (holdsValidationError is {} holdError)
+                return PhaseAResult.Fail(holdError);
 
             // 2) Derive booking metadata from holds
             var firstHold = holds[0];
