@@ -74,4 +74,18 @@ public static class ApplicationErrors
             Error.Conflict("Checkout.HoldExpired",
                 "Your checkout session has expired. Please try again.");
     }
+    public static class Payment
+    {
+        public static Error RoomNoLongerAvailable(string roomTypeName) =>
+            Error.Conflict("Payment.RoomNoLongerAvailable",
+                $"'{roomTypeName}' is no longer available. Please update your cart.");
+
+        public static readonly Error GatewayUnavailable =
+            Error.Failure("Payment.GatewayUnavailable",
+                "Payment service is temporarily unavailable. Please try again shortly.");
+
+        public static readonly Error SessionNotFound =
+            Error.NotFound("Payment.SessionNotFound",
+                "Payment session not found.");
+    }
 }
