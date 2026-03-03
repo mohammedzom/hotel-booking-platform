@@ -56,8 +56,9 @@ public class Payment : Entity
 
     public void MarkAsFailed(string? responseJson = null)
     {
-        if (Status != PaymentStatus.Pending)
+        if (Status != PaymentStatus.Pending && Status != PaymentStatus.InitiationFailed)
             throw new InvalidOperationException($"Cannot fail payment in {Status} status.");
+
         Status = PaymentStatus.Failed;
         ProviderResponseJson = responseJson;
     }
