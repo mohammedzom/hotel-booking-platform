@@ -17,4 +17,7 @@ public interface IPaymentGateway
         string rawPayload,
         string signature,
         CancellationToken ct = default);
+    Task ExpirePaymentSessionAsync(
+        string sessionId,
+        CancellationToken ct = default);
 }

@@ -69,7 +69,52 @@ public sealed class CreateBookingCommandHandler(
         }
 
         // Phase C: Persist provider session id in a short DB transaction
-        await PersistPaymentSessionAsync(created.PaymentId, session.SessionId, ct);
+        try
+        {
+            // Phase C: Persist provider session id in a short DB transaction
+            await PersistPaymentSessionAsync(created.PaymentId, session.SessionId, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(
+                ex,
+                "Phase C failed: could not persist provider session linkage. BookingId={BookingId}, PaymentId={PaymentId}, SessionId={SessionId}, Provider={Provider}",
+                created.BookingId,
+                created.PaymentId,
+                session.SessionId,
+                paymentGateway.ProviderName);
+
+            try
+            {
+                await paymentGateway.ExpirePaymentSessionAsync(session.SessionId, ct);
+
+                logger.LogWarning(
+                    "Compensation succeeded: provider session {SessionId} expired after Phase C failure for payment {PaymentId}",
+                    session.SessionId,
+                    created.PaymentId);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception compensationEx)
+            {
+                logger.LogCritical(
+                    compensationEx,
+                    "Compensation failed: provider session {SessionId} remains active after Phase C failure. BookingId={BookingId}, PaymentId={PaymentId}",
+                    session.SessionId,
+                    created.BookingId,
+                    created.PaymentId);
+            }
+
+            await MarkPaymentInitiationFailedSafeAsync(created.PaymentId, ct);
+
+            return ApplicationErrors.Payment.GatewayUnavailable;
+        }
 
         logger.LogInformation(
             "Booking {BookingNumber} created. Payment session {SessionId} via {Provider}",

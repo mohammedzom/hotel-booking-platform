@@ -157,4 +157,31 @@ internal sealed class StripePaymentGateway(
         return (normalizedType, null, paymentIntent.Id);
     }
 
+
+    public async Task ExpirePaymentSessionAsync(string sessionId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(sessionId))
+            throw new ArgumentException("Session id cannot be empty.", nameof(sessionId));
+
+        var service = new SessionService();
+
+        try
+        {
+            await service.ExpireAsync(sessionId, cancellationToken: ct);
+
+            logger.LogInformation(
+                "Stripe session {SessionId} expired successfully as compensation",
+                sessionId);
+        }
+        catch (StripeException ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Failed to expire Stripe session {SessionId} during compensation",
+                sessionId);
+
+            throw;
+        }
+    }
+
 }
