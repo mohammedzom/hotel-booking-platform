@@ -115,4 +115,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         foreach (var domainEvent in domainEvents)
             await mediator.Publish(domainEvent, ct);
     }
+
+    public Task ReloadEntityAsync<TEntity>(TEntity entity, CancellationToken ct)
+    where TEntity : class
+    => Entry(entity).ReloadAsync(ct);
+
+    public void ClearChangeTracker()
+        => ChangeTracker.Clear();
 }

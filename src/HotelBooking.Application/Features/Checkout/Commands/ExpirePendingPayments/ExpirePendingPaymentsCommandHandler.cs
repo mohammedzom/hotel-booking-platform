@@ -63,6 +63,8 @@ public sealed class ExpirePendingPaymentsCommandHandler(
                 "ExpirePendingPaymentsJob: batch concurrency conflict. Falling back to per-item processing for {Count} payments.",
                 candidatePaymentIds.Count);
 
+            db.ClearChangeTracker();
+
             foreach (var paymentId in candidatePaymentIds)
             {
                 try
@@ -144,6 +146,7 @@ public sealed class ExpirePendingPaymentsCommandHandler(
             }
             catch (InvalidOperationException ex)
             {
+                await RevertTrackedPaymentAndBookingAsync(payment, ct);
                 // Likely processed by webhook concurrently / out-of-order state transition
                 skipped++;
 
@@ -222,6 +225,7 @@ public sealed class ExpirePendingPaymentsCommandHandler(
                 paymentId);
 
             try { await tx.RollbackAsync(ct); } catch { /* no-op */ }
+            db.ClearChangeTracker();
             return false;
         }
         catch (InvalidOperationException ex)
@@ -232,6 +236,7 @@ public sealed class ExpirePendingPaymentsCommandHandler(
                 paymentId);
 
             try { await tx.RollbackAsync(ct); } catch { /* no-op */ }
+            db.ClearChangeTracker();
             return false;
         }
         catch (OperationCanceledException)
@@ -244,6 +249,15 @@ public sealed class ExpirePendingPaymentsCommandHandler(
             try { await tx.RollbackAsync(ct); } catch { /* no-op */ }
             throw;
         }
+    }
+
+
+    private async Task RevertTrackedPaymentAndBookingAsync(
+    HotelBooking.Domain.Bookings.Payment payment,
+    CancellationToken ct)
+    {
+        await db.ReloadEntityAsync(payment, ct);
+        await db.ReloadEntityAsync(payment.Booking, ct);
     }
 
     private sealed record BatchExpireResult(int Expired, int Skipped);
