@@ -176,7 +176,6 @@ public sealed class SearchHotelsQueryHandler(IAppDbContext context)
             if (normalizedAmenities.Count == 0)
                 return;
 
-            // AND semantics: hotel must contain every requested amenity
             foreach (var amenity in normalizedAmenities)
             {
                 query = query.Where(h =>
