@@ -57,10 +57,25 @@ internal sealed class StripePaymentGateway(
                 ["booking_id"] = request.BookingId.ToString(),
                 ["booking_number"] = request.BookingNumber
             }
+            ,
+            PaymentIntentData = new SessionPaymentIntentDataOptions
+            {
+                Metadata = new Dictionary<string, string>
+                {
+                    ["booking_id"] = request.BookingId.ToString(),
+                    ["booking_number"] = request.BookingNumber
+                }
+            }
+        };
+
+        var requestOptions = new RequestOptions
+        {
+            IdempotencyKey = $"checkout-session:{request.BookingId}"
         };
 
         var service = new SessionService();
-        var session = await service.CreateAsync(sessionOptions, cancellationToken: ct);
+        var session = await service.CreateAsync(sessionOptions, requestOptions, ct);
+
 
         logger.LogDebug(
             "Stripe session {SessionId} created for booking {BookingNumber}",
@@ -117,6 +132,9 @@ internal sealed class StripePaymentGateway(
             EventTypes.CheckoutSessionAsyncPaymentFailed =>
                 MapSessionEvent(stripeEvent, PaymentEventTypes.PaymentFailed),
 
+            EventTypes.PaymentIntentPaymentFailed =>
+                MapPaymentIntentEvent(stripeEvent, PaymentEventTypes.PaymentFailed),
+
             _ => (stripeEvent.Type, null, null)
         };
     }
@@ -129,4 +147,14 @@ internal sealed class StripePaymentGateway(
 
         return (normalizedType, session.Id, session.PaymentIntentId);
     }
+
+    private static (string EventType, string? SessionId, string? TxRef) MapPaymentIntentEvent(
+    Event stripeEvent, string normalizedType)
+    {
+        if (stripeEvent.Data.Object is not PaymentIntent paymentIntent)
+            return (normalizedType, null, null);
+
+        return (normalizedType, null, paymentIntent.Id);
+    }
+
 }
