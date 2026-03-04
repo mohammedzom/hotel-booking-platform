@@ -89,4 +89,16 @@ public static class ApplicationErrors
                 "Payment session not found.");
 
     }
+    public static class Booking
+    {
+        public static readonly Error NotFound =
+            Error.NotFound("Booking.NotFound", "Booking not found.");
+
+        public static readonly Error AccessDenied =
+            Error.Forbidden("Booking.AccessDenied",
+                "You do not have permission to view this booking.");
+    }
+
+
+
 }
