@@ -3,6 +3,7 @@ using HotelBooking.Application.Features.Admin.Cities.Command.DeleteCity;
 using HotelBooking.Application.Features.Admin.Cities.Command.UpdateCity;
 using HotelBooking.Application.Features.Admin.Cities.Queries;
 using HotelBooking.Application.Features.Admin.Cities.Queries.GetCities;
+using HotelBooking.Application.Features.Admin.Cities.Query.GetCityById;
 using HotelBooking.Contracts.Admin;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -45,10 +46,8 @@ public sealed class AdminCitiesController(ISender sender) : ApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCityById(Guid id, CancellationToken ct)
     {
-        // إذا لسه ما عندك GetCityByIdQuery/Handler في الخطة الحالية:
-        // مؤقتًا رجّع 404/NotImplemented أو أجّل هذا endpoint.
-        // الأفضل (وأنا أنصح): نضيف query مخصص لاحقًا.
-        return NotFound();
+        var result = await sender.Send(new GetCityByIdQuery(id), ct);
+        return result.Match(Ok, Problem);
     }
 
     [HttpPut("{id:guid}")]
