@@ -17,6 +17,13 @@ public interface IPaymentGateway
         string rawPayload,
         string signature,
         CancellationToken ct = default);
+
+    Task<RefundResponse> RefundAsync(
+     string transactionRef,
+     decimal amount,
+     string idempotencyKey,
+     CancellationToken ct = default);
+
     Task ExpirePaymentSessionAsync(
         string sessionId,
         CancellationToken ct = default);

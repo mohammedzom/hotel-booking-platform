@@ -142,6 +142,67 @@ internal sealed class StripePaymentGateway(
         }
     }
 
+    public async Task<RefundResponse> RefundAsync(
+    string transactionRef,
+    decimal amount,
+    string idempotencyKey,
+    CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(transactionRef))
+            throw new ArgumentException("Transaction reference cannot be empty.", nameof(transactionRef));
+
+        if (amount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), "Refund amount must be greater than zero.");
+
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+            throw new ArgumentException("Idempotency key cannot be empty.", nameof(idempotencyKey));
+
+        var service = new RefundService();
+
+        var refundOptions = new RefundCreateOptions
+        {
+            PaymentIntent = transactionRef,
+            Amount = ToStripeMinorUnits(amount)
+        };
+
+        var requestOptions = new RequestOptions
+        {
+            IdempotencyKey = idempotencyKey
+        };
+
+        try
+        {
+            var refund = await service.CreateAsync(refundOptions, requestOptions, ct);
+
+            logger.LogInformation(
+                "Stripe refund {RefundId} created successfully for transaction {TransactionRef}, amount={Amount}",
+                refund.Id,
+                transactionRef,
+                amount);
+
+            return new RefundResponse(
+                IsSuccess: true,
+                RefundId: refund.Id,
+                ErrorMessage: null);
+        }
+        catch (StripeException ex)
+        {
+            var message = ex.StripeError?.Message ?? ex.Message;
+
+            logger.LogWarning(
+                ex,
+                "Stripe refund failed for transaction {TransactionRef}, amount={Amount}. Error={Error}",
+                transactionRef,
+                amount,
+                message);
+
+            return new RefundResponse(
+                IsSuccess: false,
+                RefundId: null,
+                ErrorMessage: message);
+        }
+    }
+
     private static WebhookParseResult InvalidWebhook(string rawPayload) => new(
         IsSignatureValid: false,
         EventType: string.Empty,
