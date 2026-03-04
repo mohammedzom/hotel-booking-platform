@@ -206,6 +206,7 @@ public sealed class CreateBookingCommandHandler(
                 hotelId: hotel.Id,
                 hotelName: hotel.Name,
                 hotelAddress: hotel.Address,
+                userEmail: cmd.UserEmail,
                 checkIn: checkIn,
                 checkOut: checkOut,
                 totalAmount: total,
