@@ -39,7 +39,7 @@ internal sealed class StripePaymentGateway(
                     PriceData = new SessionLineItemPriceDataOptions
                     {
                         Currency = _settings.Currency,
-                        UnitAmountDecimal = request.AmountInUsd * 100, // Stripe uses cents
+                        UnitAmount = ToStripeMinorUnits(request.AmountInUsd),
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {
                             Name = $"{request.HotelName} — {request.BookingNumber}",
@@ -182,6 +182,13 @@ internal sealed class StripePaymentGateway(
 
             throw;
         }
+    }
+
+    private static long ToStripeMinorUnits(decimal amount)
+    {
+        // Defensive rounding to 2 decimals, then convert to integer cents
+        var rounded = Math.Round(amount, 2, MidpointRounding.AwayFromZero);
+        return checked((long)(rounded * 100m));
     }
 
 }
