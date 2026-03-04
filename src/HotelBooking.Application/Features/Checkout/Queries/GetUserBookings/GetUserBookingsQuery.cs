@@ -1,5 +1,6 @@
 ﻿using HotelBooking.Contracts.Admin;
 using HotelBooking.Contracts.Checkout;
+using HotelBooking.Contracts.Common;
 using HotelBooking.Domain.Common.Results;
 using MediatR;
 
@@ -10,4 +11,4 @@ public sealed record GetUserBookingsQuery(
     string? StatusFilter,
     int Page = 1,
     int PageSize = 20
-) : IRequest<Result<PaginatedAdminResponse<BookingListItemDto>>>;
+) : IRequest<Result<PaginatedResponse<BookingListItemDto>>>;

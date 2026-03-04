@@ -1,5 +1,5 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
-using HotelBooking.Contracts.Admin;
+using HotelBooking.Contracts.Common;
 using HotelBooking.Contracts.Checkout;
 using HotelBooking.Domain.Bookings.Enums;
 using HotelBooking.Domain.Common.Results;
@@ -9,9 +9,9 @@ using Microsoft.EntityFrameworkCore;
 namespace HotelBooking.Application.Features.Checkout.Queries.GetUserBookings;
 
 public sealed class GetUserBookingsQueryHandler(IAppDbContext db)
-    : IRequestHandler<GetUserBookingsQuery, Result<PaginatedAdminResponse<BookingListItemDto>>>
+    : IRequestHandler<GetUserBookingsQuery, Result<PaginatedResponse<BookingListItemDto>>>
 {
-    public async Task<Result<PaginatedAdminResponse<BookingListItemDto>>> Handle(
+    public async Task<Result<PaginatedResponse<BookingListItemDto>>> Handle(
         GetUserBookingsQuery q,
         CancellationToken ct)
     {
@@ -48,7 +48,7 @@ public sealed class GetUserBookingsQueryHandler(IAppDbContext db)
                     .FirstOrDefault()))
             .ToListAsync(ct);
 
-        return new PaginatedAdminResponse<BookingListItemDto>(
+        return new PaginatedResponse<BookingListItemDto>(
             Items: items,
             TotalCount: totalCount,
             Page: page,

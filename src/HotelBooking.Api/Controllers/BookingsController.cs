@@ -4,6 +4,7 @@ using HotelBooking.Application.Features.Checkout.Queries.GetBooking;
 using HotelBooking.Application.Features.Checkout.Queries.GetUserBookings;
 using HotelBooking.Contracts.Admin;
 using HotelBooking.Contracts.Checkout;
+using HotelBooking.Contracts.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -35,7 +36,7 @@ public sealed class BookingsController(ISender sender, IUser currentUser) : ApiC
 
     /// <summary>Get all bookings for the current user.</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(PaginatedAdminResponse<BookingListItemDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedResponse<BookingListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetMyBookings(
         [FromQuery] string? status,
