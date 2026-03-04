@@ -11,6 +11,7 @@ namespace HotelBooking.Application.Features.Checkout.Commands.HandlePaymentWebho
 
 public sealed class HandlePaymentWebhookCommandHandler(
     IAppDbContext db,
+    IEmailService emailService,
     ILogger<HandlePaymentWebhookCommandHandler> logger)
     : IRequestHandler<HandlePaymentWebhookCommand, Result<Updated>>
 {
@@ -99,6 +100,33 @@ public sealed class HandlePaymentWebhookCommandHandler(
             }
 
             await db.SaveChangesAsync(ct);
+            if (evt.EventType == PaymentEventTypes.PaymentSucceeded)
+            {
+                if (string.IsNullOrWhiteSpace(payment.Booking.UserEmail))
+                {
+                    logger.LogWarning(
+                        "Payment succeeded for booking {BookingNumber}, but booking snapshot email is empty. Skipping confirmation email.",
+                        payment.Booking.BookingNumber);
+                }
+                else
+                {
+                    var emailData = new BookingConfirmationEmailData(
+                        BookingNumber: payment.Booking.BookingNumber,
+                        HotelName: payment.Booking.HotelName,
+                        HotelAddress: payment.Booking.HotelAddress,
+                        CheckIn: payment.Booking.CheckIn,
+                        CheckOut: payment.Booking.CheckOut,
+                        Nights: payment.Booking.CheckOut.DayNumber - payment.Booking.CheckIn.DayNumber,
+                        TotalAmount: payment.Booking.TotalAmount,
+                        TransactionRef: evt.TransactionRef ?? evt.ProviderSessionId ?? string.Empty,
+                        Rooms: []);
+
+                    await emailService.SendBookingConfirmationAsync(
+                        toEmail: payment.Booking.UserEmail,
+                        data: emailData,
+                        ct: ct);
+                }
+            }
         }
         catch (InvalidOperationException ex)
         {
