@@ -22,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Admin\RoomTypes\" />
     <Folder Include="Features\Home\Commands\" />
   </ItemGroup>
 
