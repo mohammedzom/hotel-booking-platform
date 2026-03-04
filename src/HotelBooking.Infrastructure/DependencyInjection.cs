@@ -1,10 +1,11 @@
 ﻿using HotelBooking.Application.Common.Interfaces;
-using HotelBooking.Application.Common.Settings;
+using HotelBooking.Application.Settings;
 using HotelBooking.Infrastructure.BackgroundJobs;
 using HotelBooking.Infrastructure.Data;
 using HotelBooking.Infrastructure.Data.Interceptors;
 using HotelBooking.Infrastructure.Data.Repositories;
 using HotelBooking.Infrastructure.Identity;
+using HotelBooking.Infrastructure.Payment;
 using HotelBooking.Infrastructure.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -13,7 +14,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Stripe;
 using System.Text;
+using IdentityService = HotelBooking.Infrastructure.Identity.IdentityService;
 
 namespace HotelBooking.Infrastructure;
 
@@ -44,6 +47,7 @@ public static class DependencyInjection
         services.AddRefreshToken(configuration);
 
         services.AddScoped<ICheckoutHoldRepository, CheckoutHoldRepository>();
+        services.AddStripePayment(configuration);
 
 
         return services;
@@ -172,4 +176,39 @@ public static class DependencyInjection
         services.AddHostedService<RefreshTokenCleanupService>();
         return services;
     }
+
+    private static IServiceCollection AddStripePayment(
+    this IServiceCollection services,
+    IConfiguration configuration)
+    {
+        services.AddOptions<StripeSettings>()
+            .Bind(configuration.GetSection(StripeSettings.SectionName))
+            .Validate(
+                s => !string.IsNullOrWhiteSpace(s.SecretKey),
+                "Stripe:SecretKey is required.")
+            .Validate(
+                s => !string.IsNullOrWhiteSpace(s.WebhookSecret),
+                "Stripe:WebhookSecret is required.")
+            .ValidateOnStart();
+
+        services.AddOptions<PaymentUrlSettings>()
+            .Bind(configuration.GetSection(PaymentUrlSettings.SectionName))
+            .Validate(
+                s => !string.IsNullOrWhiteSpace(s.SuccessUrlTemplate),
+                "PaymentUrls:SuccessUrlTemplate is required.")
+            .Validate(
+                s => !string.IsNullOrWhiteSpace(s.CancelUrlTemplate),
+                "PaymentUrls:CancelUrlTemplate is required.")
+            .ValidateOnStart();
+
+        var stripeKey = configuration[$"{StripeSettings.SectionName}:SecretKey"];
+        if (!string.IsNullOrWhiteSpace(stripeKey))
+            StripeConfiguration.ApiKey = stripeKey;
+
+        services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+
+        return services;
+    }
+
+
 }

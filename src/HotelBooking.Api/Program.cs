@@ -12,6 +12,8 @@ ConfigureHostLogging(builder);
 AddApplicationServices(builder);
 AddHealthChecks(builder);
 
+
+
 var app = builder.Build();
 
 await ApplyMigrationsAndSeedAsync(app);
@@ -92,6 +94,7 @@ static void MapHealthEndpoints(WebApplication app)
 
     app.MapHealthChecks("/api/v1/health/ready", new HealthCheckOptions
     {
+
         Predicate = _ => true,
         AllowCachingResponses = false
     })
