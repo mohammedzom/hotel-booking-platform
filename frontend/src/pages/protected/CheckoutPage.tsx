@@ -58,7 +58,7 @@ export function CheckoutPage() {
                 specialRequests: specialRequests.trim() || undefined,
             });
             clearCart();
-            // Redirect to Stripe
+            // Redirect to payment provider (Stripe in production, mock endpoint in demo mode)
             window.location.href = res.paymentUrl;
         } catch (err: unknown) {
             const axiosErr = err as { response?: { data?: { detail?: string; title?: string } } };
@@ -229,7 +229,7 @@ export function CheckoutPage() {
                     </button>
 
                     <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 12 }}>
-                        You will be redirected to Stripe for secure payment.
+                        Demo mode — payment is simulated. No real charges are made.
                     </p>
                 </div>
             </div>
