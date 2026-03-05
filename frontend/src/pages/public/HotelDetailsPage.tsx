@@ -1,11 +1,17 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { MapPin, Star, CalendarDays, ChevronRight, Check } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { MapPin, Star, CalendarDays, ChevronRight, Check, ShoppingCart } from 'lucide-react';
 import { hotelService } from '../../services/hotelService';
+import { cartService } from '../../services/cartService';
+import { useAuthStore, selectIsAuthenticated } from '../../store/authStore';
+import { useCartStore } from '../../store/cartStore';
 import type { HotelDetailsDto, ImageDto, RoomAvailabilityDto } from '../../types/public.types';
 
 export function HotelDetailsPage() {
     const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const isAuthenticated = useAuthStore(selectIsAuthenticated);
+    const { setCart } = useCartStore();
 
     const [hotel, setHotel] = useState<HotelDetailsDto | null>(null);
     const [gallery, setGallery] = useState<ImageDto[]>([]);
@@ -20,6 +26,11 @@ export function HotelDetailsPage() {
     const [checkingRooms, setCheckingRooms] = useState(false);
     const [availableRooms, setAvailableRooms] = useState<RoomAvailabilityDto[] | null>(null);
     const [bookingError, setBookingError] = useState('');
+
+    // Add-to-cart states
+    const [addingRoomId, setAddingRoomId] = useState<string | null>(null);
+    const [addedRoomId, setAddedRoomId] = useState<string | null>(null);
+    const [cartError, setCartError] = useState('');
 
     useEffect(() => {
         async function loadHotel() {
@@ -52,6 +63,8 @@ export function HotelDetailsPage() {
         setCheckingRooms(true);
         setBookingError('');
         setAvailableRooms(null);
+        setAddedRoomId(null);
+        setCartError('');
 
         try {
             const data = await hotelService.checkRoomAvailability(id, checkIn, checkOut);
@@ -65,6 +78,39 @@ export function HotelDetailsPage() {
             );
         } finally {
             setCheckingRooms(false);
+        }
+    }
+
+    async function handleAddToCart(room: RoomAvailabilityDto) {
+        if (!isAuthenticated) {
+            navigate('/auth/login', { state: { from: { pathname: `/hotels/${id}` } } });
+            return;
+        }
+        if (!hotel || !checkIn || !checkOut) return;
+
+        setAddingRoomId(room.hotelRoomTypeId);
+        setCartError('');
+        try {
+            const updated = await cartService.addItem({
+                hotelId: hotel.id,
+                roomTypeId: room.hotelRoomTypeId,
+                checkIn,
+                checkOut,
+                quantity: 1,
+            });
+            setCart(updated);
+            setAddedRoomId(room.hotelRoomTypeId);
+            // Reset the "Added" feedback after 2s
+            setTimeout(() => setAddedRoomId(null), 2000);
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { detail?: string; title?: string } } };
+            setCartError(
+                axiosErr.response?.data?.detail ??
+                axiosErr.response?.data?.title ??
+                'Failed to add room to cart.'
+            );
+        } finally {
+            setAddingRoomId(null);
         }
     }
 
@@ -255,6 +301,12 @@ export function HotelDetailsPage() {
                                 <hr style={{ border: 'none', borderTop: '1px dashed var(--border)', margin: '4px 0 12px' }} />
                                 <h4 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Available Rooms</h4>
 
+                                {cartError && (
+                                    <div className="form-server-error" style={{ marginTop: 8, fontSize: '0.8rem' }}>
+                                        {cartError}
+                                    </div>
+                                )}
+
                                 {availableRooms.length === 0 ? (
                                     <div style={{ color: 'var(--delete)', fontSize: '0.85rem', marginTop: 8 }}>
                                         No rooms available for these dates.
@@ -276,6 +328,28 @@ export function HotelDetailsPage() {
                                                     <span style={{ color: 'var(--delete)' }}>Sold Out</span>
                                                 )}
                                             </div>
+                                            {rt.availableRooms > 0 && (
+                                                <button
+                                                    onClick={() => handleAddToCart(rt)}
+                                                    disabled={addingRoomId === rt.hotelRoomTypeId}
+                                                    className="btn btn-primary"
+                                                    style={{
+                                                        marginTop: 10, padding: '7px 14px',
+                                                        fontSize: '0.78rem', display: 'flex',
+                                                        alignItems: 'center', justifyContent: 'center', gap: 6,
+                                                        background: addedRoomId === rt.hotelRoomTypeId
+                                                            ? 'var(--get)' : undefined,
+                                                    }}
+                                                >
+                                                    {addingRoomId === rt.hotelRoomTypeId ? (
+                                                        <><span className="btn-spinner" /> Adding…</>
+                                                    ) : addedRoomId === rt.hotelRoomTypeId ? (
+                                                        <><Check size={13} /> Added!</>
+                                                    ) : (
+                                                        <><ShoppingCart size={13} /> Add to Cart</>
+                                                    )}
+                                                </button>
+                                            )}
                                         </div>
                                     ))
                                 )}

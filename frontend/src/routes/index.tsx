@@ -10,6 +10,9 @@ import { ProfilePage } from '../pages/auth/ProfilePage';
 import { HomePage } from '../pages/public/HomePage';
 import { SearchPage } from '../pages/public/SearchPage';
 import { HotelDetailsPage } from '../pages/public/HotelDetailsPage';
+import { CartPage } from '../pages/protected/CartPage';
+import { CheckoutPage } from '../pages/protected/CheckoutPage';
+import { MyBookingsPage } from '../pages/protected/MyBookingsPage';
 
 export const router = createBrowserRouter([
     // ── Main app layout (with sidebar) ────────────────────────────────────────
@@ -27,6 +30,9 @@ export const router = createBrowserRouter([
                 element: <ProtectedRoute />,
                 children: [
                     { path: 'profile', element: <ProfilePage /> },
+                    { path: 'cart', element: <CartPage /> },
+                    { path: 'checkout', element: <CheckoutPage /> },
+                    { path: 'bookings', element: <MyBookingsPage /> },
                 ],
             },
         ],

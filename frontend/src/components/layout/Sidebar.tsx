@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Search } from 'lucide-react';
 import { apiSections } from '../../data/endpoints';
-import { MethodBadge } from '../api-docs/MethodBadge';
 
 interface SidebarProps {
     isOpen?: boolean;
