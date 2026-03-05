@@ -123,3 +123,83 @@ export interface RoomAvailabilityResponse {
     checkOut: string;
     roomTypes: RoomAvailabilityDto[];
 }
+
+// ─── Cart ────────────────────────────────────────────────────────────────────
+
+export interface CartItemDto {
+    id: string;
+    hotelId: string;
+    hotelName: string;
+    roomTypeId: string;
+    roomTypeName: string;
+    checkIn: string;
+    checkOut: string;
+    nights: number;
+    pricePerNight: number;
+    totalPrice: number;
+    quantity: number;
+}
+
+export interface CartDto {
+    id: string;
+    items: CartItemDto[];
+    totalPrice: number;
+}
+
+export interface AddCartItemRequest {
+    hotelId: string;
+    roomTypeId: string;
+    checkIn: string;
+    checkOut: string;
+    quantity: number;
+}
+
+export interface UpdateCartItemRequest {
+    quantity: number;
+}
+
+// ─── Checkout ────────────────────────────────────────────────────────────────
+
+export interface CheckoutHoldResponse {
+    holdId: string;
+    expiresAt: string;
+}
+
+export interface CheckoutBookRequest {
+    holdId: string;
+    specialRequests?: string;
+}
+
+export interface CheckoutBookResponse {
+    bookingId: string;
+    paymentUrl: string;
+}
+
+// ─── Bookings ────────────────────────────────────────────────────────────────
+
+export type BookingStatus = 'Pending' | 'Confirmed' | 'Cancelled' | 'Completed';
+
+export interface BookingItemDto {
+    id: string;
+    roomTypeName: string;
+    hotelName: string;
+    checkIn: string;
+    checkOut: string;
+    nights: number;
+    pricePerNight: number;
+    totalPrice: number;
+    quantity: number;
+}
+
+export interface BookingDto {
+    id: string;
+    status: BookingStatus;
+    totalPrice: number;
+    specialRequests: string | null;
+    createdAt: string;
+    items: BookingItemDto[];
+}
+
+export interface BookingsListResponse {
+    bookings: BookingDto[];
+}

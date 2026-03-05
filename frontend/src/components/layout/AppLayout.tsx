@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Menu, X, Hotel, LogIn, LogOut, UserCircle2, ChevronDown } from 'lucide-react';
+import { Menu, X, Hotel, LogIn, LogOut, UserCircle2, ChevronDown, ShoppingCart, BookOpen } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { useAuthStore, selectIsAuthenticated, selectUser } from '../../store/authStore';
+import { useCartStore, selectCartCount } from '../../store/cartStore';
 import { authService } from '../../services/authService';
 
 export function AppLayout() {
@@ -13,6 +14,7 @@ export function AppLayout() {
 
     const isAuthenticated = useAuthStore(selectIsAuthenticated);
     const user = useAuthStore(selectUser);
+    const cartCount = useCartStore(selectCartCount);
 
     const initials = user
         ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
@@ -54,6 +56,36 @@ export function AppLayout() {
                 <div className="topbar__meta">
                     <span className="topbar__api-base">api.hotelbooking.com</span>
                     <span className="topbar__version">v1.0</span>
+
+                    {/* ── Cart icon (authenticated only) ──────────────────── */}
+                    {isAuthenticated && (
+                        <Link
+                            to="/cart"
+                            aria-label="Shopping cart"
+                            style={{
+                                position: 'relative', display: 'flex', alignItems: 'center',
+                                color: 'var(--text-secondary)', padding: '4px 6px',
+                                borderRadius: 'var(--radius-sm)', transition: 'var(--transition)',
+                                textDecoration: 'none',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                        >
+                            <ShoppingCart size={20} />
+                            {cartCount > 0 && (
+                                <span style={{
+                                    position: 'absolute', top: -4, right: -4,
+                                    minWidth: 18, height: 18, borderRadius: 9,
+                                    background: 'var(--accent)', color: 'white',
+                                    fontSize: '0.65rem', fontWeight: 700,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    padding: '0 4px',
+                                }}>
+                                    {cartCount > 99 ? '99+' : cartCount}
+                                </span>
+                            )}
+                        </Link>
+                    )}
 
                     {/* ── User Menu / Sign In ─────────────────────────── */}
                     {isAuthenticated && user ? (
@@ -136,6 +168,27 @@ export function AppLayout() {
                                             <UserCircle2 size={14} /> My Profile
                                         </Link>
 
+                                        <Link
+                                            to="/bookings"
+                                            onClick={() => setUserMenuOpen(false)}
+                                            style={{
+                                                display: 'flex', alignItems: 'center', gap: 8,
+                                                padding: '8px 12px', borderRadius: 'var(--radius-sm)',
+                                                fontSize: '0.82rem', color: 'var(--text-secondary)',
+                                                textDecoration: 'none', transition: 'var(--transition)',
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'var(--bg-elevated)';
+                                                e.currentTarget.style.color = 'var(--text-primary)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'none';
+                                                e.currentTarget.style.color = 'var(--text-secondary)';
+                                            }}
+                                        >
+                                            <BookOpen size={14} /> My Bookings
+                                        </Link>
+
                                         <button
                                             onClick={handleLogout}
                                             style={{
@@ -191,3 +244,4 @@ export function AppLayout() {
         </div>
     );
 }
+
