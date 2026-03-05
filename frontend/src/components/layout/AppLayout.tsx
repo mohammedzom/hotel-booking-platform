@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, Hotel, LogIn, LogOut, UserCircle2, ChevronDown } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { useAuthStore, selectIsAuthenticated, selectUser } from '../../store/authStore';
@@ -9,6 +9,7 @@ export function AppLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const isAuthenticated = useAuthStore(selectIsAuthenticated);
     const user = useAuthStore(selectUser);
@@ -171,16 +172,17 @@ export function AppLayout() {
                 </div>
             </header>
 
-            {/* Sidebar */}
-            <Sidebar isOpen={sidebarOpen} />
+            {/* Sidebar (Only on API Docs) */}
+            {location.pathname === '/api-docs' && <Sidebar isOpen={sidebarOpen} />}
 
             {/* Mobile overlay */}
-            {sidebarOpen && (
+            {sidebarOpen && location.pathname === '/api-docs' && (
                 <div
                     onClick={() => setSidebarOpen(false)}
                     style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 49 }}
                 />
             )}
+
 
             {/* Main */}
             <main className="main-content">
