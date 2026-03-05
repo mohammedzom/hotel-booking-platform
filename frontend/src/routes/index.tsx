@@ -1,8 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout';
 import { AuthLayout } from '../components/layout/AuthLayout';
+import { AdminLayout } from '../components/admin/AdminLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 import { PublicRoute } from '../components/auth/PublicRoute';
+import { AdminRoute } from '../components/auth/AdminRoute';
 import { ApiDocsPage } from '../pages/ApiDocsPage';
 import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
@@ -13,6 +15,10 @@ import { HotelDetailsPage } from '../pages/public/HotelDetailsPage';
 import { CartPage } from '../pages/protected/CartPage';
 import { CheckoutPage } from '../pages/protected/CheckoutPage';
 import { MyBookingsPage } from '../pages/protected/MyBookingsPage';
+import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
+import { AdminCitiesPage } from '../pages/admin/AdminCitiesPage';
+import { AdminHotelsPage } from '../pages/admin/AdminHotelsPage';
+import { AdminServicesPage } from '../pages/admin/AdminServicesPage';
 
 export const router = createBrowserRouter([
     // ── Main app layout (with sidebar) ────────────────────────────────────────
@@ -33,6 +39,23 @@ export const router = createBrowserRouter([
                     { path: 'cart', element: <CartPage /> },
                     { path: 'checkout', element: <CheckoutPage /> },
                     { path: 'bookings', element: <MyBookingsPage /> },
+                ],
+            },
+        ],
+    },
+
+    // ── Admin layout — requires Admin role ────────────────────────────────────
+    {
+        path: '/admin',
+        element: <AdminLayout />,
+        children: [
+            {
+                element: <AdminRoute />,
+                children: [
+                    { index: true, element: <AdminDashboardPage /> },
+                    { path: 'cities',   element: <AdminCitiesPage /> },
+                    { path: 'hotels',   element: <AdminHotelsPage /> },
+                    { path: 'services', element: <AdminServicesPage /> },
                 ],
             },
         ],
