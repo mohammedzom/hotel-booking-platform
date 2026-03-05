@@ -48,7 +48,7 @@ public static class DependencyInjection
         services.AddRefreshToken(configuration);
 
         services.AddScoped<ICheckoutHoldRepository, CheckoutHoldRepository>();
-        services.AddStripePayment(configuration);
+        services.AddPaymentGateway(configuration);
 
         services.AddEmail(configuration);
 
@@ -179,20 +179,10 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddStripePayment(
-    this IServiceCollection services,
-    IConfiguration configuration)
+    private static IServiceCollection AddPaymentGateway(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        services.AddOptions<StripeSettings>()
-            .Bind(configuration.GetSection(StripeSettings.SectionName))
-            .Validate(
-                s => !string.IsNullOrWhiteSpace(s.SecretKey),
-                "Stripe:SecretKey is required.")
-            .Validate(
-                s => !string.IsNullOrWhiteSpace(s.WebhookSecret),
-                "Stripe:WebhookSecret is required.")
-            .ValidateOnStart();
-
         services.AddOptions<PaymentUrlSettings>()
             .Bind(configuration.GetSection(PaymentUrlSettings.SectionName))
             .Validate(
@@ -203,11 +193,42 @@ public static class DependencyInjection
                 "PaymentUrls:CancelUrlTemplate is required.")
             .ValidateOnStart();
 
-        var stripeKey = configuration[$"{StripeSettings.SectionName}:SecretKey"];
-        if (!string.IsNullOrWhiteSpace(stripeKey))
-            StripeConfiguration.ApiKey = stripeKey;
+        var mode = configuration["Payment:Mode"] ?? "Stripe";
 
-        services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+        // Always bind MockPaymentSettings so MockPaymentController can resolve IOptions<MockPaymentSettings>
+        // regardless of mode. Validation (ConfirmUrlTemplate required) is only enforced in Mock mode.
+        services.AddOptions<MockPaymentSettings>()
+            .Bind(configuration.GetSection(MockPaymentSettings.SectionName));
+
+        if (string.Equals(mode, "Mock", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddOptions<MockPaymentSettings>()
+                .Bind(configuration.GetSection(MockPaymentSettings.SectionName))
+                .Validate(
+                    s => !string.IsNullOrWhiteSpace(s.ConfirmUrlTemplate),
+                    "MockPayment:ConfirmUrlTemplate is required when Payment:Mode is Mock.")
+                .ValidateOnStart();
+
+            services.AddScoped<IPaymentGateway, MockPaymentGateway>();
+        }
+        else
+        {
+            services.AddOptions<StripeSettings>()
+                .Bind(configuration.GetSection(StripeSettings.SectionName))
+                .Validate(
+                    s => !string.IsNullOrWhiteSpace(s.SecretKey),
+                    "Stripe:SecretKey is required.")
+                .Validate(
+                    s => !string.IsNullOrWhiteSpace(s.WebhookSecret),
+                    "Stripe:WebhookSecret is required.")
+                .ValidateOnStart();
+
+            var stripeKey = configuration[$"{StripeSettings.SectionName}:SecretKey"];
+            if (!string.IsNullOrWhiteSpace(stripeKey))
+                StripeConfiguration.ApiKey = stripeKey;
+
+            services.AddScoped<IPaymentGateway, StripePaymentGateway>();
+        }
 
         return services;
     }

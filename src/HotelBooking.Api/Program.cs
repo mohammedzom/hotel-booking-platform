@@ -51,37 +51,30 @@ static void AddHealthChecks(WebApplicationBuilder builder)
 
 static async Task ApplyMigrationsAndSeedAsync(WebApplication app)
 {
-    if (app.Environment.IsDevelopment())
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var pendingMigrations = (await context.Database.GetPendingMigrationsAsync()).ToList();
+
+    if (pendingMigrations.Count > 0)
     {
-        using var scope = app.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        app.Logger.LogWarning(
+            "Applying {Count} pending migration(s): {Migrations}",
+            pendingMigrations.Count,
+            string.Join(", ", pendingMigrations));
 
-        if ((await context.Database.GetPendingMigrationsAsync()).Any())
-        {
-            app.Logger.LogWarning(
-                "Applying {Count} pending migrations...",
-                (await context.Database.GetPendingMigrationsAsync()).Count());
+        await context.Database.MigrateAsync();
 
-            await context.Database.MigrateAsync();
-        }
-
-        await DataSeeder.SeedAsync(app.Services);
+        app.Logger.LogInformation("Database migrations applied successfully.");
     }
     else
     {
-        using var scope = app.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        app.Logger.LogInformation("Database is up to date — no pending migrations.");
+    }
 
-        try
-        {
-            await context.Database.CanConnectAsync();
-            app.Logger.LogInformation("Database connection verified.");
-        }
-        catch (Exception ex)
-        {
-            app.Logger.LogCritical(ex, "Cannot connect to database on startup.");
-            throw;
-        }
+    if (app.Environment.IsDevelopment())
+    {
+        await DataSeeder.SeedAsync(app.Services);
     }
 }
 static void MapHealthEndpoints(WebApplication app)

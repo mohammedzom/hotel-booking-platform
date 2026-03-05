@@ -15,6 +15,8 @@ import { HotelDetailsPage } from '../pages/public/HotelDetailsPage';
 import { CartPage } from '../pages/protected/CartPage';
 import { CheckoutPage } from '../pages/protected/CheckoutPage';
 import { MyBookingsPage } from '../pages/protected/MyBookingsPage';
+import { BookingSuccessPage } from '../pages/protected/BookingSuccessPage';
+import { BookingCancelPage } from '../pages/protected/BookingCancelPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { AdminCitiesPage } from '../pages/admin/AdminCitiesPage';
 import { AdminHotelsPage } from '../pages/admin/AdminHotelsPage';
@@ -39,6 +41,8 @@ export const router = createBrowserRouter([
                     { path: 'cart', element: <CartPage /> },
                     { path: 'checkout', element: <CheckoutPage /> },
                     { path: 'bookings', element: <MyBookingsPage /> },
+                    { path: 'booking/:bookingId/success', element: <BookingSuccessPage /> },
+                    { path: 'booking/:bookingId/cancel', element: <BookingCancelPage /> },
                 ],
             },
         ],
